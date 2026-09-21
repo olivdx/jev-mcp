@@ -5,6 +5,7 @@ from typing import Annotated
 
 import typer
 
+from jev_mcp.cli.key import key_app
 from jev_mcp.cli.serve import serve_cmd
 
 
@@ -33,6 +34,7 @@ def main(
 
 
 app.command("serve")(serve_cmd)
+app.add_typer(key_app)
 
 
 if __name__ == "__main__":
