@@ -170,7 +170,7 @@ def _version_callback(value: bool) -> None:
         raise typer.Exit()
 
 
-app = typer.Typer(name="jev-mcp", help="jev-mcp — AI engineering control layer for MCP clients")
+app = typer.Typer(name="jev-mcp", help="jev-mcp - AI engineering control layer for MCP clients")
 
 
 @app.callback()

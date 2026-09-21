@@ -1,0 +1,44 @@
+[tool.poetry]
+name = "mcp-jev-mcp"
+version = "0.1.0"
+description = "MCP engineering control layer: git and test signals judged by TypeSafe Jev"
+authors = ["1hoodlabs"]
+license = "MIT"
+readme = "README.md"
+packages = [{ include = "jev_mcp", from = "src" }]
+keywords = ["mcp", "typesafe", "jev", "cursor", "ai"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+]
+
+[tool.poetry.dependencies]
+python = ">=3.11,<4"
+typer = { extras = ["all"], version = "^0.15" }
+mcp = ">=1.6,<2"
+pyyaml = "^6.0"
+typesafe-sdk = "^0.7"
+uvicorn = "^0.30"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0"
+pytest-asyncio = "^0.24"
+ruff = "^0.6"
+
+[tool.poetry.scripts]
+jev-mcp = "jev_mcp.cli.main:app"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 100
+src = ["src"]
