@@ -41,7 +41,11 @@ pythonpath = ["src"]
 # All tests are functions. Disabling class collection stops pytest from trying to
 # collect domain classes whose names start with "Test" (TestsConfig, TestProjectRule).
 python_classes = []
-filterwarnings = ["error"]
+filterwarnings = [
+    "error",
+    # FastMCP Settings on some Python/pydantic-settings combos warns on forward-ref fields.
+    "ignore:Field 'lifespan' has an incomplete definition:UserWarning",
+]
 
 [tool.ruff]
 line-length = 100

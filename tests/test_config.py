@@ -7,10 +7,8 @@ def test_defaults_are_complete():
     cfg = load_config(use_user_file=False)
     assert cfg.host == "127.0.0.1"
     assert cfg.port == 8089
-    assert cfg.git.max_diff_bytes == 524_288
-    assert cfg.git.max_file_diff_bytes == 65_536
     assert cfg.tests.default_timeout_s == 600
-    assert cfg.jev.model == "jev-1.13"
+    assert cfg.jev.model == "jev-latest"
     assert cfg.jev.max_retries == 2
     assert cfg.decision.default_profile == "default"
     assert cfg.decision.thresholds.tests_blocking_fix == 0.6
@@ -23,8 +21,6 @@ def test_yaml_overrides_defaults(tmp_path):
             """
             port: 9000
             log_format: json
-            git:
-              max_diff_bytes: 1024
             tests:
               default_timeout_s: 30
               projects:
@@ -42,8 +38,6 @@ def test_yaml_overrides_defaults(tmp_path):
     cfg = load_config(config_file)
     assert cfg.port == 9000
     assert cfg.log_format == "json"
-    assert cfg.git.max_diff_bytes == 1024
-    assert cfg.git.max_file_diff_bytes == 65_536  # untouched key keeps its default
     assert cfg.tests.default_timeout_s == 30
     assert cfg.tests.projects[0].match == "pyproject.toml"
     assert cfg.tests.projects[0].command == ["pytest", "-q"]
