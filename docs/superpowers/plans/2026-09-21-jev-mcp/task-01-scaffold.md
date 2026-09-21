@@ -81,6 +81,10 @@ build-backend = "poetry.core.masonry.api"
 asyncio_mode = "auto"
 testpaths = ["tests"]
 pythonpath = ["src"]
+# All tests are functions. Disabling class collection stops pytest from trying to
+# collect domain classes whose names start with "Test" (TestsConfig, TestProjectRule).
+python_classes = []
+filterwarnings = ["error"]
 
 [tool.ruff]
 line-length = 100

@@ -243,7 +243,8 @@ async def collect_git(
 
     branch = (await _git(repo, "branch", "--show-current")).strip()
     head_sha = (await _git(repo, "rev-parse", "HEAD", allow_failure=True)).strip()
-    porcelain = await _git(repo, "status", "--porcelain")
+    # -uall lists untracked files individually; the default collapses them to a directory name.
+    porcelain = await _git(repo, "status", "--porcelain", "-uall")
 
     merge_base = None
     if base_ref:

@@ -234,7 +234,14 @@ Fatal failures raise `JevMcpError`, which the MCP layer surfaces as `RuntimeErro
 }
 ```
 
-Untracked files are listed by name only; their content is not diffed.
+Untracked files are listed by name only (via `status --porcelain -uall`, so each file appears
+individually rather than as a collapsed directory).
+
+**Known limitation:** `git diff HEAD` does not include untracked content, so a change consisting
+only of new files reaches Jev as names without bodies, and `facts.diff_empty` is `True`. Since
+creating new files is a common agent action, this weakens the evidence behind a `done` verdict.
+Resolving it — by inlining untracked content into the diff, or by having policy refuse `done`
+when untracked files exist with an empty diff — is deferred until the pipeline runs end to end.
 
 **Errors:** `PATH_INVALID`, `NOT_A_REPO`, `GIT_NOT_FOUND`, `GIT_FAILED`.
 
