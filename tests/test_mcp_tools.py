@@ -2,12 +2,7 @@ import pytest
 
 from jev_mcp.errors import InvalidProfileError, NotConfiguredError
 from jev_mcp.jev.answers import ChoiceAnswer, JevAnswers, ScoreAnswer
-from jev_mcp.mcp.tools import (
-    handle_decide,
-    handle_describe,
-    handle_health,
-    handle_run_tests,
-)
+from jev_mcp.mcp.tools import handle_decide, handle_describe, handle_health
 
 CLEAN_ANSWERS = JevAnswers(
     model="jev-1.13",
@@ -28,18 +23,6 @@ def assert_envelope(payload: dict) -> None:
     assert payload["request_id"]
     assert payload["duration_ms"] >= 0
     assert payload["errors"] == []
-
-
-async def test_run_tests_returns_an_enveloped_result(app_state, tmp_path):
-    import sys
-
-    payload = await handle_run_tests(
-        app_state,
-        project_root=str(tmp_path),
-        command=[sys.executable, "-c", "print('ok')"],
-    )
-    assert_envelope(payload)
-    assert payload["exit_code"] == 0
 
 
 async def test_decide_without_a_key_raises_not_configured(app_state):
@@ -108,11 +91,10 @@ async def test_health_does_not_probe_by_default(app_state):
     assert payload["ok"] is False
 
 
-async def test_health_reports_a_detected_test_command(app_state, tmp_path, monkeypatch):
+async def test_health_reports_mode_and_key(app_state, monkeypatch):
     monkeypatch.setenv("TYPESAFE_API_KEY", "key")
-    (tmp_path / "pyproject.toml").write_text("[tool.poetry]\n", encoding="utf-8")
-    payload = await handle_health(app_state, project_root=str(tmp_path))
-    assert payload["test_command"] == ["pytest", "-q"]
+    payload = await handle_health(app_state)
+    assert payload["mode"] == "agent_summary"
     assert payload["key_source"] == "env"
     assert payload["key_hint"]
 
@@ -136,5 +118,5 @@ async def test_describe_is_generated_from_the_code(app_state):
     assert payload["policy_id"] == "policy-engineering-gate-v2"
     assert set(payload["profiles"]) == {"default", "strict", "ci"}
     assert len(payload["questions"]) == 7
-    assert "collect_git" not in payload["tools"]
-    assert "decide" in payload["tools"]
+    assert "run_tests" not in payload["tools"]
+    assert payload["tools"] == ["decide", "health", "describe"]

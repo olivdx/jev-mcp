@@ -1,12 +1,9 @@
 from __future__ import annotations
 
 import asyncio
-import shutil
 import time
 from dataclasses import dataclass
 
-from jev_mcp.collectors.detect import detect_test_command
-from jev_mcp.collectors.runner import run_tests
 from jev_mcp.config import AppConfig, load_config
 from jev_mcp.credentials import mask, resolve_api_key, verify_api_key
 from jev_mcp.decision.envelope import build_decide_payload
@@ -16,7 +13,7 @@ from jev_mcp.jev.client import evaluate_state
 from jev_mcp.jev.questions import QUESTIONSET_ID, RISK_LEVELS, build_questions
 from jev_mcp.jev.state_builder import build_state
 from jev_mcp.logger import new_request_id, trace
-from jev_mcp.util.paths import config_path, jev_home, resolve_project_root
+from jev_mcp.util.paths import config_path, jev_home
 from jev_mcp.util.responses import tool_response
 
 
@@ -60,31 +57,6 @@ class _Timer:
         return int((time.monotonic() - self._started) * 1000)
 
 
-async def handle_run_tests(
-    state: AppState,
-    *,
-    project_root: str,
-    command: list[str] | None = None,
-    timeout_s: float | None = None,
-    env: dict[str, str] | None = None,
-    mcp_session_id: str | None = None,
-) -> dict:
-    with _Timer("run_tests", mcp_session_id) as timer:
-        root = resolve_project_root(project_root)
-        payload = await run_tests(
-            root, state.config.tests, command=command, timeout_s=timeout_s, env=env
-        )
-        trace(
-            "tests_ran",
-            request_id=timer.request_id,
-            runner_id=payload["runner_id"],
-            exit_code=payload["exit_code"],
-            duration_s=payload["duration_s"],
-            timed_out=payload["timed_out"],
-        )
-        return tool_response(payload, request_id=timer.request_id, duration_ms=timer.duration_ms)
-
-
 async def handle_decide(
     state: AppState,
     *,
@@ -107,10 +79,11 @@ async def handle_decide(
             raise NotConfiguredError()
 
         jev_state, missing = build_state(goal=goal, tests=tests, extra=extra)
+        tests_facts = None if "tests" in missing else jev_state.get("tests")
         answers = await evaluate_state(jev_state, state.config, api_key)
         result = route_decision(
             answers,
-            facts=facts_from_payloads(None, tests if "tests" not in missing else None),
+            facts=facts_from_payloads(None, tests_facts),
             profile=chosen,
             cfg=state.config.decision,
             missing_signals=missing,
@@ -149,22 +122,14 @@ async def handle_health(
                 reachable = False
                 errors.append({"code": exc.code, "message": exc.message})
 
-        git_available = shutil.which("git") is not None
-
-        test_command = None
-        if project_root:
-            detected = detect_test_command(resolve_project_root(project_root), state.config.tests)
-            test_command = list(detected[1]) if detected else None
-
         body = {
             "ok": bool(api_key) and reachable is not False,
             "key_source": source,
             "key_hint": mask(api_key) if api_key else None,
             "typesafe_reachable": reachable,
-            "git_available": git_available,
             "home": str(jev_home()),
             "config_path": str(config_path()),
-            "test_command": test_command,
+            "mode": "agent_summary",
         }
         return tool_response(
             body, request_id=timer.request_id, duration_ms=timer.duration_ms, errors=errors
@@ -175,7 +140,7 @@ async def handle_describe(state: AppState, *, mcp_session_id: str | None = None)
     with _Timer("describe", mcp_session_id) as timer:
         questions = build_questions()
         body = {
-            "tools": ["run_tests", "decide", "health", "describe"],
+            "tools": ["decide", "health", "describe"],
             "questionset_id": QUESTIONSET_ID,
             "policy_id": POLICY_ID,
             "profiles": list(PROFILES),
@@ -188,12 +153,21 @@ async def handle_describe(state: AppState, *, mcp_session_id: str | None = None)
             },
             "risk_levels": list(RISK_LEVELS),
             "workflow": [
-                "agent summarizes the work in decide.extra (plan, changes, open questions)",
-                "call decide with goal and extra; optionally pass run_tests payload in tests",
-                "obey the action: fix keeps working, ask goes to the user, done may finish",
+                "agent summarizes work in decide.extra (summary, plan, risks)",
+                "agent reports tests in extra.verification or decide.tests (exit_code, summary, log tail)",
+                "call decide with goal and extra; obey fix / ask / done",
             ],
+            "extra_schema_hint": {
+                "summary": "what changed and why",
+                "verification": {
+                    "command": "poetry run pytest -q",
+                    "exit_code": 0,
+                    "summary": "142 passed",
+                    "stdout_tail": "optional last lines",
+                },
+            },
             "notes": [
-                "there is no collect_git tool; context is agent-authored in extra",
+                "no collect_git or run_tests tools; evidence is agent-authored",
                 "next_action is a cross-check; the action comes from policy in code",
                 "nouls carry no confidence; decide.confidence describes the rule that fired",
             ],

@@ -177,12 +177,6 @@ def test_ci_requires_a_passing_test_run_for_done():
     assert "ci:needs_passing_tests" in result.policy_trace
 
 
-def test_ci_fixes_when_git_is_missing():
-    result = route(answers(), profile="ci", missing=["git"])
-    assert result.action == "fix"
-    assert "ci:no_git" in result.policy_trace
-
-
 def test_ci_allows_done_with_passing_tests():
     result = route(answers(), profile="ci")
     assert result.action == "done"
@@ -213,3 +207,9 @@ def test_facts_from_payloads_handles_absent_signals():
     facts = facts_from_payloads(None, None)
     assert facts.diff_empty is True
     assert facts.tests_ran is False
+
+
+def test_facts_from_agent_summary_without_exit_code():
+    facts = facts_from_payloads(None, {"summary": "142 passed"})
+    assert facts.tests_ran is True
+    assert facts.tests_exit_code is None

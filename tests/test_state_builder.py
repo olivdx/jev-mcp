@@ -29,3 +29,12 @@ def test_tests_and_extra_are_included():
 def test_secrets_in_extra_are_not_double_redacted():
     state, _ = build_state(goal="g", extra={"notes": "plain text"})
     assert state["extra"]["notes"] == "plain text"
+
+
+def test_verification_in_extra_counts_as_tests_signal():
+    state, missing = build_state(
+        goal="g",
+        extra={"verification": {"exit_code": 0, "summary": "142 passed"}},
+    )
+    assert missing == []
+    assert state["tests"]["exit_code"] == 0

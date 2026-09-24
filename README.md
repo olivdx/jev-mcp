@@ -64,17 +64,15 @@ only by your user profile ACL, so prefer the environment variable on a shared ma
 
 | Tool | What it does |
 |------|--------------|
-| `decide(goal, extra?, tests?, profile?)` | Agent summary + goal → Jev → `fix` / `ask` / `done` |
-| `run_tests(project_root, command?, timeout_s?)` | Optional; pass payload into `decide.tests` |
+| `decide(goal, extra?, tests?, profile?)` | Agent summary + test report → Jev → `fix` / `ask` / `done` |
 | `health(project_root?, probe?)` | Key source and TypeSafe probe |
-| `describe()` | Question set, policy, and workflow |
+| `describe()` | Question set, policy, workflow, and `extra` hints |
 
 ### Recommended workflow
 
-1. Agent writes a short summary (plan, changes, risks) into `decide.extra`.
-2. Call **`decide`** with the user's goal and that `extra` object.
-3. Optionally attach `run_tests` output in `tests`.
-4. Obey the verdict — `fix` keeps working, `ask` goes to the user, `done` may finish.
+1. Agent runs tests locally (shell), then writes `decide.extra` with `summary` and `verification` (`exit_code`, `summary`, optional log tail).
+2. Call **`decide`** with the user's goal and that `extra` object (or pass the same fields in `tests`).
+3. Obey the verdict — `fix` keeps working, `ask` goes to the user, `done` may finish.
 
 ## Profiles
 
@@ -82,12 +80,12 @@ only by your user profile ACL, so prefer the environment variable on a shared ma
 |---------|----------|
 | `default` | The nine policy rules as written |
 | `strict` | Also asks when code changed with no test signal, or when Jev's cross-check confidently disagrees with a `done` |
-| `ci` | `done` requires a test run that exited zero |
+| `ci` | `done` requires agent-reported tests with `exit_code` 0 |
 
 ## Headless gate
 
 ```bash
-jev-mcp gate --goal "add retry to the uploader" --project-root . --no-tests --json
+jev-mcp gate --goal "add retry" --extra-json '{"summary":"...","verification":{"exit_code":0}}' --json
 ```
 
 | Exit code | Meaning |

@@ -2,54 +2,18 @@ from __future__ import annotations
 
 import asyncio
 import json
-import shlex
 from pathlib import Path
 from typing import Annotated
 
 import typer
 
 from jev_mcp.config import load_config
-from jev_mcp.errors import JevMcpError, NoTestCommandError
+from jev_mcp.errors import JevMcpError
 from jev_mcp.logger import configure
-from jev_mcp.mcp.tools import (
-    AppState,
-    create_app_state,
-    handle_decide,
-    handle_run_tests,
-)
+from jev_mcp.mcp.tools import create_app_state, handle_decide
 
 EXIT_CODES = {"done": 0, "fix": 1, "ask": 2}
 ERROR_EXIT_CODE = 3
-
-
-async def _run_pipeline(
-    state: AppState,
-    *,
-    goal: str,
-    project_root: Path,
-    profile: str | None,
-    test_command: list[str] | None,
-    skip_tests: bool,
-    extra: dict | None,
-) -> dict:
-    root = str(project_root)
-    tests_payload = None
-    if not skip_tests:
-        try:
-            tests_payload = await handle_run_tests(
-                state, project_root=root, command=test_command
-            )
-        except NoTestCommandError:
-            tests_payload = None
-
-    return await handle_decide(
-        state,
-        goal=goal,
-        tests=tests_payload,
-        project_root=root,
-        profile=profile,
-        extra=extra,
-    )
 
 
 def gate_cmd(
@@ -60,27 +24,40 @@ def gate_cmd(
     profile: Annotated[
         str | None, typer.Option("--profile", help="default, strict, or ci")
     ] = None,
-    test_command: Annotated[
-        str | None, typer.Option("--test-command", help="Override the detected test command")
+    extra_json: Annotated[
+        str | None,
+        typer.Option(
+            "--extra-json",
+            help='Agent context JSON, e.g. {"summary":"...","verification":{"exit_code":0}}',
+        ),
     ] = None,
-    no_tests: Annotated[bool, typer.Option("--no-tests", help="Skip the test run")] = False,
     json_output: Annotated[bool, typer.Option("--json", help="Print the raw envelope")] = False,
 ) -> None:
-    """Run optional tests then decide; exit 0 for done, 1 for fix, 2 for ask."""
+    """Call decide with goal and optional agent-authored extra JSON."""
     cfg = load_config()
     configure(cfg.log_level, cfg.log_format, cfg.log_redact)
     state = create_app_state(cfg)
 
+    extra = None
+    if extra_json:
+        try:
+            extra = json.loads(extra_json)
+        except json.JSONDecodeError as exc:
+            typer.echo(f"Invalid --extra-json: {exc}", err=True)
+            raise typer.Exit(code=ERROR_EXIT_CODE) from exc
+        if not isinstance(extra, dict):
+            typer.echo("--extra-json must be a JSON object", err=True)
+            raise typer.Exit(code=ERROR_EXIT_CODE)
+
     try:
         payload = asyncio.run(
-            _run_pipeline(
+            handle_decide(
                 state,
                 goal=goal,
-                project_root=project_root,
+                tests=None,
+                project_root=str(project_root),
                 profile=profile,
-                test_command=shlex.split(test_command) if test_command else None,
-                skip_tests=no_tests,
-                extra=None,
+                extra=extra,
             )
         )
     except JevMcpError as exc:

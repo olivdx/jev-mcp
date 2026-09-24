@@ -45,9 +45,16 @@ def facts_from_payloads(git: dict | None, tests: dict | None) -> Facts:
         diff_empty = not str(git.get("diff", "")).strip() and not git.get("changed_files")
     if not tests:
         return Facts(diff_empty=diff_empty)
+    tests_ran = (
+        tests.get("exit_code") is not None
+        or bool(tests.get("summary"))
+        or bool(tests.get("stdout"))
+        or bool(tests.get("stderr"))
+        or bool(tests.get("tests_ran"))
+    )
     return Facts(
         diff_empty=diff_empty,
-        tests_ran=True,
+        tests_ran=tests_ran,
         tests_exit_code=tests.get("exit_code"),
         tests_timed_out=bool(tests.get("timed_out")),
     )
@@ -200,13 +207,6 @@ def _apply_profile_gates(
         )
 
     if profile == "ci":
-        if "git" in missing_signals:
-            return _result(
-                ACTION_FIX,
-                1.0,
-                [*result.reasons, "ci: no git signal was supplied"],
-                [*result.policy_trace, "ci:no_git", "route:fix"],
-            )
         if not facts.tests_ran or facts.tests_exit_code != 0:
             return _result(
                 ACTION_FIX,

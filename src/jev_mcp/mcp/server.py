@@ -9,7 +9,6 @@ from jev_mcp.mcp.tools import (
     handle_decide,
     handle_describe,
     handle_health,
-    handle_run_tests,
 )
 from jev_mcp.mcp.transport import Transport
 
@@ -42,25 +41,6 @@ def create_mcp_app(host: str, port: int) -> FastMCP:
     mcp = FastMCP("jev-mcp", host=host, port=port)
 
     @mcp.tool()
-    async def run_tests(
-        ctx: Context,
-        project_root: str,
-        command: list[str] | None = None,
-        timeout_s: float | None = None,
-    ) -> dict:
-        """Run the project's tests. A non-zero exit code is returned as data, not an error."""
-        try:
-            return await handle_run_tests(
-                _app_state(),
-                project_root=project_root,
-                command=command,
-                timeout_s=timeout_s,
-                mcp_session_id=_session_id(ctx),
-            )
-        except JevMcpError as exc:
-            raise _fail(exc) from exc
-
-    @mcp.tool()
     async def decide(
         ctx: Context,
         goal: str,
@@ -71,7 +51,8 @@ def create_mcp_app(host: str, port: int) -> FastMCP:
     ) -> dict:
         """Judge the goal and agent summary; return fix, ask, or done.
 
-        Put the plan or change summary in extra, e.g. extra.summary or extra.plan_text.
+        Put plan and changes in extra.summary. Report tests in extra.verification
+        (exit_code, summary) or pass the same fields in tests.
         """
         try:
             return await handle_decide(

@@ -3,10 +3,10 @@ import pytest
 from jev_mcp.mcp.server import create_mcp_app
 
 
-async def test_four_tools_are_registered():
+async def test_three_tools_are_registered():
     mcp = create_mcp_app("127.0.0.1", 8089)
     names = {tool.name for tool in await mcp.list_tools()}
-    assert names == {"run_tests", "decide", "health", "describe"}
+    assert names == {"decide", "health", "describe"}
 
 
 async def test_every_tool_has_a_description():
