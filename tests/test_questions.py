@@ -4,7 +4,7 @@ from jev_mcp.jev.questions import CHOICE_KEYS, NOUL_KEYS, QUESTIONSET_ID, RISK_L
 
 
 def test_questionset_id_is_versioned():
-    assert QUESTIONSET_ID == "engineering-gate-v2"
+    assert QUESTIONSET_ID == "engineering-gate-v3"
 
 
 def test_every_declared_key_is_built():
@@ -29,3 +29,10 @@ def test_choice_options_have_descriptions():
     criteria = build_questions()["next_action"].criteria
     assert set(criteria) == {"fix", "ask_user", "done"}
     assert all(isinstance(text, str) and text for text in criteria.values())
+
+
+def test_instructions_reference_agent_extra_not_diff():
+    questions = build_questions()
+    goal_text = questions["goal_addressed"].instructions
+    assert "extra" in goal_text
+    assert "diff" not in goal_text.lower()

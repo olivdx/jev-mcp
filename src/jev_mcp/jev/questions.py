@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typesafe_sdk import Choice, Noul, Score
 
-QUESTIONSET_ID = "engineering-gate-v2"
+QUESTIONSET_ID = "engineering-gate-v3"
 
 NOUL_KEYS: tuple[str, ...] = (
     "goal_addressed",
@@ -23,62 +23,64 @@ RISK_LEVELS: list[str] = [
 
 
 def build_questions() -> dict[str, object]:
-    """The engineering-gate-v2 set: atomic signals plus one cross-check."""
+    """Agent-summary gate: atomic signals from goal + extra, plus one cross-check."""
     return {
         "goal_addressed": Noul(
             instructions=(
-                "The code changes in the diff implement what the stated goal describes. "
-                "Judge only whether the change does the thing the goal asks for, "
-                "not whether it is elegant or complete in other respects."
+                "Given `goal` and what the agent wrote in `extra` (especially `extra.summary`), "
+                "the described work implements what the goal asks for. "
+                "Judge only whether the summary shows the goal is met, not elegance or unrelated polish."
             )
         ),
         "goal_ambiguous": Noul(
             instructions=(
-                "The stated goal is too vague or underspecified to tell whether the diff completes it. "
-                "This is about the wording of the goal, not the quality of the change."
+                "The stated `goal` is too vague or underspecified to tell from `extra` whether the work is complete. "
+                "This is about the goal wording and missing detail in `extra`, not code quality."
             )
         ),
         "tests_blocking": Noul(
             instructions=(
-                "The test output reports failures, errors, or collection problems that block "
-                "completing this task. Skipped tests, deprecation warnings, and passing runs "
-                "are not blocking."
+                "From `tests` and/or `extra.verification`, the reported test outcome shows failures, errors, "
+                "or collection problems that block completing this task. "
+                "Skipped tests, deprecation warnings, and passing runs are not blocking."
             )
         ),
         "incomplete_work": Noul(
             instructions=(
-                "The diff contains obviously unfinished work: newly added TODO or FIXME markers, "
-                "stubbed functions, bodies that only raise NotImplementedError or pass, "
-                "leftover debug prints, or large blocks of commented-out code."
+                "From `extra.summary` and any other `extra` fields, the agent's description still shows "
+                "obviously unfinished work: TODO/FIXME left in scope, stubbed behavior, NotImplementedError, "
+                "debug leftovers, or large commented-out blocks they admit are not done."
             )
         ),
         "scope_creep": Noul(
             instructions=(
-                "The diff contains substantial changes unrelated to the stated goal, "
+                "From `extra.summary`, the described changes include substantial work unrelated to `goal`, "
                 "beyond incidental formatting, imports, or lockfile updates."
             )
         ),
         "risk_regression": Score(
-            instructions="How much of the system could this change break?",
+            instructions=(
+                "From `extra.summary` and `goal`, how much of the system could this described change break?"
+            ),
             criteria=list(RISK_LEVELS),
         ),
         "next_action": Choice(
             instructions=(
-                "An engineering agent made this change toward the stated goal. "
+                "An engineering agent reported work toward `goal` in `extra`. "
                 "What should it do next?"
             ),
             criteria={
                 "fix": (
-                    "Keep working: the change is incomplete, tests fail, "
-                    "or the diff has obvious gaps."
+                    "Keep working: the summary shows gaps, tests fail or are blocking, "
+                    "or the goal is not met yet."
                 ),
                 "ask_user": (
                     "Stop and ask a person: the goal is unclear, or finishing needs a decision "
                     "the agent cannot make on its own."
                 ),
                 "done": (
-                    "The change addresses the goal and the available test evidence supports "
-                    "stopping here."
+                    "The summary shows the goal is addressed and the reported test evidence "
+                    "(if any) supports stopping here."
                 ),
             },
         ),

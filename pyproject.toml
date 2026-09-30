@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "mcp-jev-mcp"
-version = "0.1.0"
-description = "MCP engineering control layer: git and test signals judged by TypeSafe Jev"
+version = "0.2.0"
+description = "MCP gate: agent summary + Jev engineering-gate-v3 (decide, health, describe)"
 authors = ["1hoodlabs"]
 license = "MIT"
 readme = "README.md"

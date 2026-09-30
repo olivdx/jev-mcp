@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import time
 from dataclasses import dataclass
+from importlib.metadata import version
 
 from jev_mcp.config import AppConfig, load_config
 from jev_mcp.credentials import mask, resolve_api_key, verify_api_key
@@ -130,6 +131,7 @@ async def handle_health(
             "home": str(jev_home()),
             "config_path": str(config_path()),
             "mode": "agent_summary",
+            "package_version": version("mcp-jev-mcp"),
         }
         return tool_response(
             body, request_id=timer.request_id, duration_ms=timer.duration_ms, errors=errors
@@ -140,6 +142,7 @@ async def handle_describe(state: AppState, *, mcp_session_id: str | None = None)
     with _Timer("describe", mcp_session_id) as timer:
         questions = build_questions()
         body = {
+            "package_version": version("mcp-jev-mcp"),
             "tools": ["decide", "health", "describe"],
             "questionset_id": QUESTIONSET_ID,
             "policy_id": POLICY_ID,

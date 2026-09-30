@@ -22,8 +22,8 @@ def _verdict(action: str, confidence: float = 0.9) -> dict:
         "missing_signals": [],
         "jev": {
             "model": "jev-1.13",
-            "questionset_id": "engineering-gate-v2",
-            "policy_id": "policy-engineering-gate-v2",
+            "questionset_id": "engineering-gate-v3",
+            "policy_id": "policy-engineering-gate-v3",
             "answers": {},
         },
     }
@@ -57,7 +57,7 @@ def test_json_output_is_the_decide_envelope(stub_decide, tmp_path):
     )
     payload = json.loads(result.stdout)
     assert payload["action"] == "done"
-    assert payload["jev"]["policy_id"] == "policy-engineering-gate-v2"
+    assert payload["jev"]["policy_id"] == "policy-engineering-gate-v3"
 
 
 def test_human_output_shows_action_and_reason(stub_decide, tmp_path):

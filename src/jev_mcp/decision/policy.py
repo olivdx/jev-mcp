@@ -6,7 +6,7 @@ from jev_mcp.config import DecisionConfig
 from jev_mcp.errors import InvalidProfileError
 from jev_mcp.jev.answers import JevAnswers
 
-POLICY_ID = "policy-engineering-gate-v2"
+POLICY_ID = "policy-engineering-gate-v3"
 PROFILES: tuple[str, ...] = ("default", "strict", "ci")
 
 ACTION_FIX = "fix"
@@ -198,11 +198,11 @@ def _apply_profile_gates(
     profile: str,
     missing_signals: list[str],
 ) -> DecideResult:
-    if profile == "strict" and not facts.tests_ran and not facts.diff_empty:
+    if profile == "strict" and not facts.tests_ran:
         return _result(
             ACTION_ASK,
             1.0,
-            [*result.reasons, "strict: code changed but no test signal was supplied"],
+            [*result.reasons, "strict: no test evidence was reported in state"],
             [*result.policy_trace, "strict:no_tests", "route:ask"],
         )
 

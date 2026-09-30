@@ -42,7 +42,7 @@ def route(ans, *, facts=None, profile="default", missing=None):
 
 
 def test_policy_id_is_versioned():
-    assert POLICY_ID == "policy-engineering-gate-v2"
+    assert POLICY_ID == "policy-engineering-gate-v3"
 
 
 def test_decisiveness_measures_distance_from_a_coin_flip():
@@ -155,7 +155,7 @@ def test_strict_ignores_a_low_confidence_disagreement():
     assert result.action == "done"
 
 
-def test_strict_asks_when_code_changed_without_tests():
+def test_strict_asks_when_no_test_evidence_reported():
     result = route(
         answers(),
         facts=Facts(diff_empty=False, tests_ran=False),

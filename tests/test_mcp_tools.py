@@ -62,7 +62,7 @@ async def test_decide_returns_a_verdict(app_state, monkeypatch):
     )
     assert_envelope(payload)
     assert payload["action"] == "done"
-    assert payload["jev"]["questionset_id"] == "engineering-gate-v2"
+    assert payload["jev"]["questionset_id"] == "engineering-gate-v3"
     assert payload["missing_signals"] == []
 
 
@@ -114,8 +114,8 @@ async def test_health_probe_reports_failure_as_an_error_entry(app_state, monkeyp
 
 async def test_describe_is_generated_from_the_code(app_state):
     payload = await handle_describe(app_state)
-    assert payload["questionset_id"] == "engineering-gate-v2"
-    assert payload["policy_id"] == "policy-engineering-gate-v2"
+    assert payload["questionset_id"] == "engineering-gate-v3"
+    assert payload["policy_id"] == "policy-engineering-gate-v3"
     assert set(payload["profiles"]) == {"default", "strict", "ci"}
     assert len(payload["questions"]) == 7
     assert "run_tests" not in payload["tools"]
